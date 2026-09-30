@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dripping Tap – Practice Water Audit</title>
+<style>
+  :root{--bg:#0f2a3a;--card:#16394d;--ink:#f3f8fb;--muted:#a9c3d1;--water:#3fb6ff;--accent:#ffd166;--red:#ff6b6b;--green:#5ee38a}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Tahoma,Arial,sans-serif;background:radial-gradient(circle at 30% 10%,#1d4d68,var(--bg));color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:18px}
+  h1{margin:4px 0 2px;font-size:28px;text-align:center}
+  .ar{direction:rtl;font-size:.95em;color:var(--muted)}
+  .wrap{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;align-items:flex-start;margin-top:12px;width:100%;max-width:1100px}
+  .stage{background:var(--card);border-radius:18px;padding:10px;box-shadow:0 10px 30px #0006}
+  .panel{background:var(--card);border-radius:18px;padding:18px;min-width:320px;max-width:420px;flex:1;box-shadow:0 10px 30px #0006}
+  .timer{font-size:64px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:2px}
+  .reading{font-size:26px;text-align:center;margin:4px 0 12px}
+  .reading b{color:var(--water);font-size:40px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+  button{font:inherit;font-size:17px;border:0;border-radius:12px;padding:12px 14px;cursor:pointer;color:#06202e;background:#dbe9f1;min-width:120px;line-height:1.25;transition:transform .1s, box-shadow .2s}
+  button:hover{transform:translateY(-2px)}
+  button small{display:block;direction:rtl;font-size:14px;opacity:.8}
+  button.on{box-shadow:0 0 0 4px var(--accent)}
+  .b-close{background:#9fe6b8}.b-drip{background:#ffe29a}.b-open{background:#9fd8ff}
+  .b-start{background:var(--accent)}.b-reset{background:#c9d6de}
+  .status{text-align:center;font-size:18px;min-height:28px;margin-top:6px}
+  .box{margin-top:12px;background:#0d2533;border-radius:12px;padding:14px;font-size:19px;line-height:1.6;display:none}
+  .box.show{display:block}
+  .math{display:none;margin-top:8px;border-top:1px dashed #3a6680;padding-top:8px}
+  .math.show{display:block}
+  .note{font-size:13px;color:var(--muted);text-align:center;margin-top:14px;max-width:900px}
+  .warn{color:var(--red);font-weight:700}
+  .ok{color:var(--green);font-weight:700}
+</style>
+</head>
+<body>
+  <h1>Practice Water Audit: The Dripping Tap</h1>
+  <div class="ar">فحص المياه التدريبي: الحنفية اللي بتنقط</div>
+
+  <div class="wrap">
+    <div class="stage">
+      <svg id="scene" viewBox="0 0 420 470" width="420" height="470" aria-label="Tap dripping into a measuring cup">
+        <defs>
+          <clipPath id="cupClip"><path d="M172 250 L188 440 L292 440 L308 250 Z"/></clipPath>
+          <linearGradient id="metal" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#e8eef2"/><stop offset=".5" stop-color="#aab8c2"/><stop offset="1" stop-color="#7d8d98"/>
+          </linearGradient>
+          <linearGradient id="waterG" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#7fd0ff"/><stop offset="1" stop-color="#1f8fd6"/>
+          </linearGradient>
+        </defs>
+        <!-- wall + pipe -->
+        <rect x="0" y="40" width="40" height="120" fill="#2b5a74"/>
+        <rect x="40" y="80" width="150" height="34" rx="6" fill="url(#metal)"/>
+        <!-- tap body -->
+        <rect x="185" y="66" width="80" height="62" rx="12" fill="url(#metal)"/>
+        <path d="M225 128 L225 150 Q225 168 243 168 L250 168 L250 184 L232 184 L232 176 Q210 176 210 150 L210 128 Z" fill="url(#metal)"/>
+        <!-- handle -->
+        <g id="handle" style="transform-origin:225px 60px;transition:transform .5s">
+          <rect x="221" y="36" width="8" height="30" fill="#8a9aa5"/>
+          <rect x="185" y="26" width="80" height="16" rx="8" fill="#d64545"/>
+          <circle cx="225" cy="34" r="9" fill="#b53434"/>
+        </g>
+        <!-- stream (open tap) -->
+        <rect id="stream" x="236" y="184" width="10" height="0" fill="url(#waterG)" opacity=".95"/>
+        <!-- drops layer -->
+        <g id="drops"></g>
+        <!-- cup -->
+        <g clip-path="url(#cupClip)">
+          <rect id="water" x="160" y="440" width="160" height="0" fill="url(#waterG)" opacity=".85"/>
+        </g>
+        <path d="M172 250 L188 440 L292 440 L308 250" fill="none" stroke="#e9f4fa" stroke-width="4" stroke-linejoin="round"/>
+        <g id="ticks" font-size="12" fill="#e9f4fa"></g>
+        <!-- overflow spill -->
+        <rect id="spill" x="306" y="250" width="6" height="0" fill="#5cc2ff" opacity=".8"/>
+        <ellipse id="puddle" cx="330" cy="452" rx="0" ry="6" fill="#3fb6ff" opacity=".6"/>
+        <!-- floor -->
+        <rect x="120" y="440" width="260" height="6" rx="3" fill="#2b5a74"/>
+        <text x="240" y="466" text-anchor="middle" font-size="13" fill="#a9c3d1">Measuring cup · 50 ml</text>
+      </svg>
+    </div>
+
+    <div class="panel">
+      <div class="timer" id="timer">1:00</div>
+      <div class="reading">Cup reading / قراية الكوباية: <b id="reading">0</b> ml</div>
+
+      <div class="row">
+        <button class="b-close" id="bClose">Close tap<small>اقفل الحنفية</small></button>
+        <button class="b-drip" id="bDrip">Dripping tap<small>الحنفية بتنقط</small></button>
+        <button class="b-open" id="bOpen">Open tap<small>افتح الحنفية</small></button>
+      </div>
+      <div class="row">
+        <button class="b-start" id="bStart">Start 1 minute<small>ابدأ دقيقة</small></button>
+        <button class="b-reset" id="bReset">Reset<small>من الأول</small></button>
+        <button class="b-reset" id="bSound">🔊 Sound on<small>الصوت شغال</small></button>
+      </div>
+      <div class="status" id="status">Choose the tap, then press Start.<br><span class="ar">اختار حالة الحنفية ودوس ابدأ</span></div>
+
+      <div class="box" id="result">
+        <div id="resultLine"></div>
+        <div class="row" style="margin:8px 0 0"><button id="bMath">Show the math<small>اظهر الحسبة</small></button></div>
+        <div class="math" id="math"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">Practice figures for the exercise, not a real Hub measurement: dripping tap = 20 ml per minute; open tap = about 6 litres per minute. · أرقام تدريبية للنشاط، مش قياس حقيقي للمركز.</div>
+
+<script>
+(function(){
+  const CAP = 50;                       // cup capacity, ml (small cup so 20 ml is clearly visible)
+  const RATES = {closed:0, drip:20/60, open:100}; // ml per second (open ≈ 6 L/min)
+  const CUP_TOP = 250, CUP_BOTTOM = 440, CUP_H = CUP_BOTTOM - CUP_TOP;
+  const SPOUT_X = 241, SPOUT_Y = 184;
+
+  let mode = 'drip', running = false, finished = false;
+  let elapsed = 0, cupMl = 0, totalMl = 0, last = null, dropTimer = 0;
+
+  const $ = id => document.getElementById(id);
+  const water = $('water'), stream = $('stream'), drops = $('drops'), handle = $('handle');
+  const spill = $('spill'), puddle = $('puddle');
+
+  // cup scale ticks
+  const ticks = $('ticks');
+  // ticks every 5 ml, labels every 10 ml
+  for(let ml=5; ml<=CAP; ml+=5){
+    const y = CUP_BOTTOM - ml/CAP*CUP_H, xr = 308 - (y-CUP_TOP)/CUP_H*16;
+    const big = ml % 10 === 0;
+    const t = document.createElementNS('http://www.w3.org/2000/svg','line');
+    t.setAttribute('x1', xr-(big?18:10)); t.setAttribute('x2', xr-2); t.setAttribute('y1', y); t.setAttribute('y2', y);
+    t.setAttribute('stroke','#e9f4fa'); t.setAttribute('stroke-width', big?'2':'1.5');
+    ticks.appendChild(t);
+    if(big){
+      const lb = document.createElementNS('http://www.w3.org/2000/svg','text');
+      lb.setAttribute('x', xr+6); lb.setAttribute('y', y+4); lb.textContent = ml;
+      ticks.appendChild(lb);
+    }
+  }
+
+  function surfaceY(){ return CUP_BOTTOM - Math.min(cupMl,CAP)/CAP*CUP_H; }
+
+  function setMode(m){
+    mode = m;
+    ['bClose','bDrip','bOpen'].forEach(id=>$(id).classList.remove('on'));
+    $({closed:'bClose',drip:'bDrip',open:'bOpen'}[m]).classList.add('on');
+    handle.style.transform = m==='open' ? 'rotate(-75deg)' : 'rotate(0deg)';
+    if(!running && !finished) setStatus();
+  }
+
+  function setStatus(msg){
+    const s = $('status');
+    if(msg){ s.innerHTML = msg; return; }
+    const t = {
+      closed:'Tap closed fully: no water wasted.<br><span class="ar">الحنفية مقفولة كويس: مفيش مية بتضيع</span>',
+      drip:'The tap is closed badly and drips.<br><span class="ar">الحنفية مقفولة غلط وبتنقط</span>',
+      open:'The tap is open: water runs fast!<br><span class="ar">الحنفية مفتوحة: المية بتنزل بسرعة</span>'
+    }[mode];
+    s.innerHTML = running ? t : t + '<br>Press Start to measure. / دوس ابدأ عشان نقيس';
+  }
+
+  function fmtTime(sec){
+    const r = Math.max(0, 60 - sec);
+    const s = Math.ceil(r - 1e-9);
+    return '0:' + String(s).padStart(2,'0').replace('60','60');
+  }
+
+  // ---------- Sound (Web Audio, no files needed) ----------
+  let actx = null, soundOn = true, flow = null;
+  function ensureCtx(){
+    if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ actx = null; } }
+    if(actx && actx.state === 'suspended') actx.resume();
+  }
+  document.addEventListener('click', ensureCtx);
+
+  function playDrip(){
+    if(!soundOn || !actx) return;
+    const t = actx.currentTime;
+    const f0 = 1100 + Math.random()*500;         // slight variation, like real drops
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f0*0.45, t + 0.09);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.5, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(g).connect(actx.destination);
+    o.start(t); o.stop(t + 0.2);
+    // soft "plop" underneath
+    const o2 = actx.createOscillator(), g2 = actx.createGain();
+    o2.type = 'triangle'; o2.frequency.setValueAtTime(260, t);
+    o2.frequency.exponentialRampToValueAtTime(140, t + 0.06);
+    g2.gain.setValueAtTime(0.0001, t);
+    g2.gain.exponentialRampToValueAtTime(0.25, t + 0.004);
+    g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+    o2.connect(g2).connect(actx.destination);
+    o2.start(t); o2.stop(t + 0.1);
+  }
+
+  function startFlow(){
+    if(flow || !actx) return;
+    const len = actx.sampleRate * 2, buf = actx.createBuffer(1, len, actx.sampleRate), data = buf.getChannelData(0);
+    for(let i=0;i<len;i++) data[i] = Math.random()*2-1;
+    const src = actx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 900; bp.Q.value = 0.7;
+    const g = actx.createGain(); g.gain.value = 0.0001;
+    src.connect(bp).connect(g).connect(actx.destination); src.start();
+    g.gain.exponentialRampToValueAtTime(0.35, actx.currentTime + 0.3);
+    flow = {src, g};
+  }
+  function stopFlow(){
+    if(!flow) return;
+    const f = flow; flow = null;
+    f.g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.25);
+    setTimeout(()=>{ try{ f.src.stop(); }catch(e){} }, 300);
+  }
+  setInterval(()=>{
+    if(soundOn && actx && running && mode === 'open') startFlow(); else stopFlow();
+  }, 150);
+
+  $('bSound').onclick = ()=>{
+    soundOn = !soundOn;
+    $('bSound').innerHTML = soundOn ? '🔊 Sound on<small>الصوت شغال</small>' : '🔇 Sound off<small>الصوت مقفول</small>';
+    if(!soundOn) stopFlow();
+  };
+
+  function spawnDrop(){
+    const d = document.createElementNS('http://www.w3.org/2000/svg','path');
+    d.setAttribute('d','M0 -9 C4 -2 6 2 6 5 A6 6 0 0 1 -6 5 C-6 2 -4 -2 0 -9 Z');
+    d.setAttribute('fill','#7fd0ff');
+    d.dataset.y = SPOUT_Y; d.dataset.v = 0;
+    d.setAttribute('transform',`translate(${SPOUT_X},${SPOUT_Y})`);
+    drops.appendChild(d);
+  }
+
+  function render(){
+    const sy = surfaceY();
+    water.setAttribute('y', sy);
+    water.setAttribute('height', CUP_BOTTOM - sy);
+    $('reading').textContent = Math.round(Math.min(cupMl,CAP));
+    stream.setAttribute('height', mode==='open' && (running) ? Math.max(0, sy - SPOUT_Y) : 0);
+    const over = totalMl - CAP;
+    if(over > 0){
+      spill.setAttribute('height', running && mode!=='closed' ? 190 : 0);
+      puddle.setAttribute('rx', Math.min(70, 10 + over/40));
+    } else { spill.setAttribute('height',0); puddle.setAttribute('rx',0); }
+    $('timer').textContent = fmtTime(elapsed);
+  }
+
+  function finish(){
+    running = false; finished = true;
+    const box = $('result'); box.classList.add('show');
+    const ml = Math.round(totalMl);
+    const overflow = totalMl > CAP;
+    let line;
+    if(ml === 0){
+      line = '<span class="ok">In 1 minute: 0 ml wasted.</span> A tap closed fully saves every drop.<br><span class="ar">في دقيقة: صفر. الحنفية المقفولة كويس بتوفّر كل نقطة.</span>';
+    } else {
+      line = `<b>Water in 1 minute: ${ml.toLocaleString()} ml</b>` +
+        (overflow ? ` <span class="warn">(the cup overflowed!)</span>` : '') +
+        `<br><span class="ar">المية في دقيقة: ${ml.toLocaleString()} مل${overflow?' (الكوباية فاضت!)':''}</span>`;
+    }
+    $('resultLine').innerHTML = line;
+    const perHour = ml*60, perDay = perHour*24;
+    const L = v => (v/1000).toLocaleString(undefined,{maximumFractionDigits:1});
+    $('math').innerHTML =
+      `1 hour: ${ml.toLocaleString()} × 60 = ${perHour.toLocaleString()} ml = <b>${L(perHour)} litres</b><br>` +
+      `1 day: ${perHour.toLocaleString()} × 24 = ${perDay.toLocaleString()} ml = <b>${L(perDay)} litres</b>` +
+      `<br><span class="ar">ساعة = ${L(perHour)} لتر · يوم = ${L(perDay)} لتر</span>`;
+    $('math').classList.remove('show');
+    $('bMath').style.display = ml===0 ? 'none' : '';
+    setStatus('Time is up! Read the cup.<br><span class="ar">الوقت خلص! اقرا الكوباية</span>');
+  }
+
+  function loop(ts){
+    if(last===null) last = ts;
+    const dt = Math.min(0.1,(ts-last)/1000); last = ts;
+    if(running){
+      const step = Math.min(dt, 60 - elapsed);
+      elapsed += step;
+      const add = RATES[mode]*step;
+      totalMl += add; cupMl = Math.min(CAP, cupMl + add);
+      if(mode==='drip'){ dropTimer += step; if(dropTimer >= 1.2){ dropTimer = 0; spawnDrop(); } }
+      if(elapsed >= 60) finish();
+    }
+    // move drops
+    const sy = surfaceY();
+    [...drops.children].forEach(d=>{
+      let y = +d.dataset.y, v = +d.dataset.v;
+      v += 900*dt; y += v*dt;
+      if(y >= sy - 4){
+        d.remove();
+        playDrip();
+        const r = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+        r.setAttribute('cx', SPOUT_X); r.setAttribute('cy', sy); r.setAttribute('rx', 3); r.setAttribute('ry', 1.5);
+        r.setAttribute('fill','none'); r.setAttribute('stroke','#dff4ff'); r.setAttribute('stroke-width','2');
+        drops.appendChild(r);
+        let k = 0;
+        const grow = setInterval(()=>{ k++; r.setAttribute('rx', 3+k*3); r.setAttribute('ry', 1.5+k*0.8); r.setAttribute('opacity', 1-k/8); if(k>=8){ clearInterval(grow); r.remove(); } }, 40);
+        return;
+      }
+      if(d.tagName !== 'path') return;
+      d.dataset.y = y; d.dataset.v = v;
+      d.setAttribute('transform',`translate(${SPOUT_X},${y})`);
+    });
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  function reset(){
+    running = false; finished = false; elapsed = 0; cupMl = 0; totalMl = 0; dropTimer = 0;
+    drops.innerHTML = '';
+    $('result').classList.remove('show');
+    setStatus();
+  }
+
+  $('bClose').onclick = ()=>setMode('closed');
+  $('bDrip').onclick  = ()=>setMode('drip');
+  $('bOpen').onclick  = ()=>setMode('open');
+  $('bStart').onclick = ()=>{ reset(); running = true; if(mode==='drip') spawnDrop(); setStatus(); };
+  $('bReset').onclick = reset;
+  $('bMath').onclick  = ()=>$('math').classList.toggle('show');
+
+  setMode('drip');
+  render();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
